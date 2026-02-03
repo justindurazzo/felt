@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FELT</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;900&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0a0a;
+            --fg: #fafafa;
+            --muted: #888;
+            --border: #fafafa;
+        }
+
+        [data-theme="light"] {
+            --bg: #fafafa;
+            --fg: #0a0a0a;
+            --muted: #666;
+            --border: #0a0a0a;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            min-height: 100vh;
+            cursor: crosshair;
+            overflow-x: hidden;
+            transition: background 0.4s ease, color 0.4s ease;
+        }
+
+        .container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .logo {
+            font-size: 0.75rem;
+            font-weight: 900;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .theme-switch {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.6rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+
+        .theme-switch label {
+            cursor: pointer;
+            padding: 0.3rem 0;
+            opacity: 0.4;
+            transition: opacity 0.2s;
+        }
+
+        .theme-switch label:hover {
+            opacity: 0.7;
+        }
+
+        .theme-switch input {
+            display: none;
+        }
+
+        .theme-switch input:checked + label {
+            opacity: 1;
+        }
+
+        .switch-track {
+            width: 32px;
+            height: 14px;
+            border: 1px solid var(--fg);
+            border-radius: 7px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .switch-track::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--fg);
+            border-radius: 50%;
+            top: 2px;
+            left: 3px;
+            transition: transform 0.3s ease;
+        }
+
+        [data-theme="light"] .switch-track::after {
+            transform: translateX(14px);
+        }
+
+        .status {
+            font-size: 0.65rem;
+            color: var(--muted);
+            text-align: right;
+            letter-spacing: 0.1em;
+        }
+
+        .status span {
+            display: block;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 4rem 0;
+        }
+
+        .hero {
+            max-width: 90vw;
+        }
+
+        h1 {
+            font-size: clamp(4rem, 20vw, 16rem);
+            font-weight: 900;
+            line-height: 0.85;
+            letter-spacing: -0.04em;
+            margin-bottom: 2rem;
+        }
+
+        .subtitle {
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
+            font-weight: 400;
+            color: var(--muted);
+            max-width: 500px;
+            line-height: 1.5;
+        }
+
+        .thesis {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            max-width: 600px;
+        }
+
+        .thesis p {
+            font-size: 0.85rem;
+            line-height: 1.8;
+            color: var(--muted);
+            margin-bottom: 1rem;
+        }
+
+        .thesis strong {
+            color: var(--fg);
+        }
+
+        .sequence {
+            display: flex;
+            gap: 1rem;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .sequence span {
+            font-size: 0.7rem;
+            font-weight: 900;
+            letter-spacing: 0.2em;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+
+        .sequence span:hover {
+            background: var(--fg);
+            color: var(--bg);
+        }
+
+        .sequence .arrow {
+            border: none;
+            padding: 0.5rem 0;
+            color: var(--muted);
+        }
+
+        .sequence .arrow:hover {
+            background: transparent;
+            color: var(--muted);
+        }
+
+        footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            font-size: 0.65rem;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+        }
+
+        .cta {
+            font-weight: 900;
+            color: var(--fg);
+            text-decoration: none;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            transition: opacity 0.2s;
+        }
+
+        .cta:hover {
+            opacity: 0.5;
+        }
+
+        .pulse {
+            position: fixed;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+            transition: background 0.4s ease;
+        }
+
+        [data-theme="light"] .pulse {
+            background: radial-gradient(circle, rgba(0,0,0,0.03) 0%, transparent 70%);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+            }
+
+            .controls {
+                gap: 1rem;
+            }
+
+            .status {
+                display: none;
+            }
+
+            .sequence {
+                gap: 0.5rem;
+            }
+
+            .sequence span {
+                font-size: 0.6rem;
+                padding: 0.4rem 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="pulse" id="pulse"></div>
+
+    <div class="container">
+        <header>
+            <div class="logo">FELT</div>
+            <div class="controls">
+                <div class="theme-switch">
+                    <input type="radio" name="theme" id="dark" value="dark" checked>
+                    <label for="dark">DARK</label>
+                    <div class="switch-track" id="switchTrack"></div>
+                    <input type="radio" name="theme" id="light" value="light">
+                    <label for="light">LIGHT</label>
+                </div>
+                <div class="status">
+                    <span>PRE-AGI</span>
+                    <span>2026</span>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="hero">
+                <h1>FELT<br>EXPERIENCE</h1>
+                <p class="subtitle">The last human offering.</p>
+
+                <div class="thesis">
+                    <p>When machines think better than us, compute faster than us, create beyond us—<strong>what remains?</strong></p>
+                    <p>Not knowledge. Not productivity. Not even creativity.</p>
+                    <p><strong>Feeling.</strong> The irreducible fact of being a body moving through time.</p>
+                </div>
+
+                <div class="sequence">
+                    <span>AGI</span>
+                    <span class="arrow">→</span>
+                    <span>ASI</span>
+                    <span class="arrow">→</span>
+                    <span>UBI</span>
+                    <span class="arrow">→</span>
+                    <span>?</span>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <span>NOTHING LEFT TO DO</span>
+            <a href="#" class="cta">EVERYTHING LEFT TO FEEL →</a>
+        </footer>
+    </div>
+
+    <script>
+        const pulse = document.getElementById('pulse');
+        const html = document.documentElement;
+        const darkRadio = document.getElementById('dark');
+        const lightRadio = document.getElementById('light');
+        const switchTrack = document.getElementById('switchTrack');
+
+        document.addEventListener('mousemove', (e) => {
+            pulse.style.left = e.clientX + 'px';
+            pulse.style.top = e.clientY + 'px';
+        });
+
+        function setTheme(theme) {
+            html.setAttribute('data-theme', theme);
+            if (theme === 'dark') {
+                darkRadio.checked = true;
+            } else {
+                lightRadio.checked = true;
+            }
+        }
+
+        darkRadio.addEventListener('change', () => setTheme('dark'));
+        lightRadio.addEventListener('change', () => setTheme('light'));
+
+        switchTrack.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            setTheme(current === 'dark' ? 'light' : 'dark');
+        });
+    </script>
+</body>
+</html>
