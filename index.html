@@ -27,6 +27,10 @@
             --border: #0a0a0a;
         }
 
+        html {
+            overflow-x: hidden;
+        }
+
         body {
             font-family: 'Inter', -apple-system, sans-serif;
             background: var(--bg);
@@ -43,6 +47,8 @@
             flex-direction: column;
             justify-content: space-between;
             padding: 2rem;
+            max-width: 100vw;
+            overflow-x: hidden;
         }
 
         header {
@@ -139,14 +145,15 @@
         }
 
         .hero {
-            max-width: 90vw;
+            max-width: 100%;
+            width: 100%;
         }
 
         h1 {
-            font-size: clamp(4rem, 20vw, 16rem);
+            font-size: clamp(2.5rem, 13vw, 16rem);
             font-weight: 900;
-            line-height: 0.85;
-            letter-spacing: -0.04em;
+            line-height: 0.9;
+            letter-spacing: -0.03em;
             margin-bottom: 2rem;
         }
 
@@ -215,6 +222,8 @@
             font-size: 0.65rem;
             color: var(--muted);
             letter-spacing: 0.1em;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .cta {
@@ -259,6 +268,14 @@
                 display: none;
             }
 
+            h1 {
+                font-size: clamp(2.2rem, 12vw, 5rem);
+            }
+
+            .thesis {
+                margin-top: 2.5rem;
+            }
+
             .sequence {
                 gap: 0.5rem;
             }
@@ -266,6 +283,11 @@
             .sequence span {
                 font-size: 0.6rem;
                 padding: 0.4rem 0.7rem;
+            }
+
+            footer {
+                flex-direction: column;
+                align-items: flex-start;
             }
         }
     </style>
