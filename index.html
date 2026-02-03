@@ -41,7 +41,59 @@
             transition: background 0.4s ease, color 0.4s ease;
         }
 
+        /* Fluid canvas background */
+        #fluidCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        body.fluid-active #fluidCanvas {
+            pointer-events: auto;
+        }
+
+        #fluidError {
+            display: none;
+        }
+
+        /* Audio toggle button */
+        #audioToggle {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 100;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--fg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            opacity: 0.6;
+        }
+
+        #audioToggle:hover {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        #audioToggle.active {
+            opacity: 1;
+            background: var(--fg);
+            color: var(--bg);
+        }
+
         .container {
+            position: relative;
+            z-index: 1;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -240,19 +292,7 @@
         }
 
         .pulse {
-            position: fixed;
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
-            pointer-events: none;
-            transform: translate(-50%, -50%);
-            z-index: -1;
-            transition: background 0.4s ease;
-        }
-
-        [data-theme="light"] .pulse {
-            background: radial-gradient(circle, rgba(0,0,0,0.03) 0%, transparent 70%);
+            display: none; /* Replaced by fluid */
         }
 
         @media (max-width: 768px) {
@@ -292,8 +332,22 @@
         }
     </style>
 </head>
-<body>
-    <div class="pulse" id="pulse"></div>
+<body class="fluid-active">
+    <canvas id="fluidCanvas"></canvas>
+    <div id="fluidError"></div>
+
+    <!-- Audio toggle UI -->
+    <button id="audioToggle" aria-label="Toggle audio">
+        <svg id="audioOn" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+        <svg id="audioOff" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+        </svg>
+    </button>
 
     <div class="container">
         <header>
@@ -342,17 +396,12 @@
         </footer>
     </div>
 
-    <script>
-        const pulse = document.getElementById('pulse');
+    <script type="module">
+        // Theme switching
         const html = document.documentElement;
         const darkRadio = document.getElementById('dark');
         const lightRadio = document.getElementById('light');
         const switchTrack = document.getElementById('switchTrack');
-
-        document.addEventListener('mousemove', (e) => {
-            pulse.style.left = e.clientX + 'px';
-            pulse.style.top = e.clientY + 'px';
-        });
 
         function setTheme(theme) {
             html.setAttribute('data-theme', theme);
@@ -361,14 +410,726 @@
             } else {
                 lightRadio.checked = true;
             }
+            // Update fluid colors
+            if (window.fluidSim) {
+                window.fluidSim.isDark = theme === 'dark';
+            }
         }
 
         darkRadio.addEventListener('change', () => setTheme('dark'));
         lightRadio.addEventListener('change', () => setTheme('light'));
-
         switchTrack.addEventListener('click', () => {
             const current = html.getAttribute('data-theme');
             setTheme(current === 'dark' ? 'light' : 'dark');
+        });
+
+        // ============================================
+        // WebGPU Fluid Simulation
+        // ============================================
+        const canvas = document.getElementById('fluidCanvas');
+        
+        const NUM_PARTICLES = 15000;
+        let mouseX = 0, mouseY = 0;
+        let prevMouseX = 0, prevMouseY = 0;
+        let mouseDown = false;
+        let device, context, format;
+        let particleBuffers, uniformBuffer;
+        let computePipeline, renderPipeline;
+        let computeBindGroups, renderBindGroup;
+        let frameCount = 0;
+
+        window.fluidSim = { isDark: true };
+
+        async function initFluid() {
+            if (!navigator.gpu) {
+                console.log('WebGPU not supported, falling back gracefully');
+                return;
+            }
+
+            const adapter = await navigator.gpu.requestAdapter();
+            if (!adapter) return;
+
+            device = await adapter.requestDevice();
+            context = canvas.getContext('webgpu');
+            format = navigator.gpu.getPreferredCanvasFormat();
+            
+            context.configure({
+                device,
+                format,
+                alphaMode: 'premultiplied',
+            });
+
+            resize();
+            window.addEventListener('resize', resize);
+            
+            // Mouse events
+            document.addEventListener('mousemove', (e) => {
+                prevMouseX = mouseX;
+                prevMouseY = mouseY;
+                mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -((e.clientY / window.innerHeight) * 2 - 1);
+            });
+            document.addEventListener('mousedown', () => mouseDown = true);
+            document.addEventListener('mouseup', () => mouseDown = false);
+
+            // Touch events
+            document.addEventListener('touchstart', (e) => {
+                mouseDown = true;
+                const touch = e.touches[0];
+                prevMouseX = mouseX;
+                prevMouseY = mouseY;
+                mouseX = (touch.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -((touch.clientY / window.innerHeight) * 2 - 1);
+            }, { passive: true });
+
+            document.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                prevMouseX = mouseX;
+                prevMouseY = mouseY;
+                mouseX = (touch.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -((touch.clientY / window.innerHeight) * 2 - 1);
+            }, { passive: true });
+
+            document.addEventListener('touchend', () => mouseDown = false);
+
+            await createResources();
+            requestAnimationFrame(render);
+        }
+
+        function resize() {
+            const dpr = Math.min(window.devicePixelRatio, 2);
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+        }
+
+        async function createResources() {
+            const initialData = new Float32Array(NUM_PARTICLES * 4);
+            for (let i = 0; i < NUM_PARTICLES; i++) {
+                const idx = i * 4;
+                // Spawn in a ring/disc around center
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 0.2 + Math.random() * 0.8; // ring from 0.2 to 1.0
+                initialData[idx] = Math.cos(angle) * radius;
+                initialData[idx + 1] = Math.sin(angle) * radius * 0.6; // squash vertically
+                // Initial orbital velocity (tangent to center) - 35% slower
+                const speed = 0.00195 + Math.random() * 0.0013;
+                initialData[idx + 2] = -Math.sin(angle) * speed;
+                initialData[idx + 3] = Math.cos(angle) * speed * 0.6;
+            }
+
+            particleBuffers = [
+                device.createBuffer({
+                    size: initialData.byteLength,
+                    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+                }),
+                device.createBuffer({
+                    size: initialData.byteLength,
+                    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+                })
+            ];
+            device.queue.writeBuffer(particleBuffers[0], 0, initialData);
+            device.queue.writeBuffer(particleBuffers[1], 0, initialData);
+
+            uniformBuffer = device.createBuffer({
+                size: 64,
+                usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+            });
+
+            const computeShader = device.createShaderModule({
+                code: `
+                    struct Params {
+                        deltaTime: f32,
+                        mouseX: f32,
+                        mouseY: f32,
+                        mouseVelX: f32,
+                        mouseVelY: f32,
+                        mouseDown: f32,
+                        time: f32,
+                        aspectRatio: f32,
+                        numParticles: f32,
+                        isDark: f32,
+                        padding1: f32,
+                        padding2: f32,
+                    }
+
+                    struct Particle {
+                        pos: vec2f,
+                        vel: vec2f,
+                    }
+
+                    @group(0) @binding(0) var<uniform> params: Params;
+                    @group(0) @binding(1) var<storage, read> particlesIn: array<Particle>;
+                    @group(0) @binding(2) var<storage, read_write> particlesOut: array<Particle>;
+
+                    fn mod289(x: vec3f) -> vec3f { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                    fn mod289_4(x: vec4f) -> vec4f { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                    fn permute(x: vec4f) -> vec4f { return mod289_4(((x * 34.0) + 1.0) * x); }
+                    fn taylorInvSqrt(r: vec4f) -> vec4f { return 1.79284291400159 - 0.85373472095314 * r; }
+
+                    fn snoise(v: vec3f) -> f32 {
+                        let C = vec2f(1.0 / 6.0, 1.0 / 3.0);
+                        let D = vec4f(0.0, 0.5, 1.0, 2.0);
+                        var i = floor(v + dot(v, vec3f(C.y)));
+                        let x0 = v - i + dot(i, vec3f(C.x));
+                        let g = step(x0.yzx, x0.xyz);
+                        let l = 1.0 - g;
+                        let i1 = min(g.xyz, l.zxy);
+                        let i2 = max(g.xyz, l.zxy);
+                        let x1 = x0 - i1 + C.x;
+                        let x2 = x0 - i2 + C.y;
+                        let x3 = x0 - D.yyy;
+                        i = mod289(i);
+                        let p = permute(permute(permute(
+                            i.z + vec4f(0.0, i1.z, i2.z, 1.0))
+                            + i.y + vec4f(0.0, i1.y, i2.y, 1.0))
+                            + i.x + vec4f(0.0, i1.x, i2.x, 1.0));
+                        let n_ = 0.142857142857;
+                        let ns = n_ * D.wyz - D.xzx;
+                        let j = p - 49.0 * floor(p * ns.z * ns.z);
+                        let x_ = floor(j * ns.z);
+                        let y_ = floor(j - 7.0 * x_);
+                        let x = x_ * ns.x + ns.yyyy;
+                        let y = y_ * ns.x + ns.yyyy;
+                        let h = 1.0 - abs(x) - abs(y);
+                        let b0 = vec4f(x.xy, y.xy);
+                        let b1 = vec4f(x.zw, y.zw);
+                        let s0 = floor(b0) * 2.0 + 1.0;
+                        let s1 = floor(b1) * 2.0 + 1.0;
+                        let sh = -step(h, vec4f(0.0));
+                        let a0 = b0.xzyw + s0.xzyw * sh.xxyy;
+                        let a1 = b1.xzyw + s1.xzyw * sh.zzww;
+                        var p0 = vec3f(a0.xy, h.x);
+                        var p1 = vec3f(a0.zw, h.y);
+                        var p2 = vec3f(a1.xy, h.z);
+                        var p3 = vec3f(a1.zw, h.w);
+                        let norm = taylorInvSqrt(vec4f(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
+                        p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+                        var m = max(0.6 - vec4f(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), vec4f(0.0));
+                        m = m * m;
+                        return 42.0 * dot(m * m, vec4f(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
+                    }
+
+                    fn curlNoise(p: vec3f) -> vec2f {
+                        let e = 0.01;
+                        let dx = vec3f(e, 0.0, 0.0);
+                        let dy = vec3f(0.0, e, 0.0);
+                        let n1 = snoise(p + dy) - snoise(p - dy);
+                        let n2 = snoise(p + dx) - snoise(p - dx);
+                        return vec2f(n1, -n2) / (2.0 * e);
+                    }
+
+                    @compute @workgroup_size(256)
+                    fn main(@builtin(global_invocation_id) id: vec3u) {
+                        let idx = id.x;
+                        if (idx >= u32(params.numParticles)) { return; }
+
+                        var p = particlesIn[idx];
+                        var pos = p.pos;
+                        var vel = p.vel;
+
+                        // === BLACK HOLE CENTER GRAVITY ===
+                        let center = vec2f(0.0, 0.0);
+                        let toCenter = center - pos;
+                        let distToCenter = length(toCenter);
+                        
+                        // Gravitational pull (stronger when closer, with minimum distance)
+                        let minDist = 0.05;
+                        let effectiveDist = max(distToCenter, minDist);
+                        let gravityStrength = 0.00026 / (effectiveDist * effectiveDist);
+                        let gravityForce = normalize(toCenter) * min(gravityStrength, 0.0013);
+                        vel += gravityForce;
+                        
+                        // Orbital velocity (tangent to center) - creates swirl
+                        let tangent = vec2f(-toCenter.y, toCenter.x);
+                        let orbitalStrength = 0.0001 / max(effectiveDist, 0.1);
+                        vel += normalize(tangent) * orbitalStrength;
+
+                        // Curl noise for turbulence
+                        let noiseScale = 2.0;
+                        let noisePos = vec3f(pos * noiseScale, params.time * 0.13);
+                        let curl = curlNoise(noisePos) * 0.00026;
+                        vel += curl;
+
+                        // Mouse interaction - disrupts the flow
+                        let mousePos = vec2f(params.mouseX, params.mouseY);
+                        let mouseVel = vec2f(params.mouseVelX, params.mouseVelY);
+                        let toMouse = mousePos - pos;
+                        let distToMouse = length(toMouse);
+                        
+                        if (distToMouse < 0.35) {
+                            let influence = 1.0 - distToMouse / 0.35;
+                            let influenceSmooth = influence * influence * (3.0 - 2.0 * influence);
+                            
+                            if (params.mouseDown > 0.5) {
+                                // Click pulls particles in
+                                vel += normalize(toMouse) * influenceSmooth * 0.013;
+                            } else {
+                                // Hover pushes them away, disrupting orbit
+                                vel -= normalize(toMouse) * influenceSmooth * 0.0052;
+                                vel += mouseVel * influenceSmooth * 0.325;
+                            }
+                        }
+
+                        // Damping
+                        vel *= 0.988;
+
+                        pos += vel;
+
+                        // Soft boundaries - particles wrap or bounce gently
+                        let bounds = 1.2;
+                        let boundsY = bounds / params.aspectRatio;
+                        
+                        if (pos.x < -bounds) { pos.x = bounds - 0.01; }
+                        if (pos.x > bounds) { pos.x = -bounds + 0.01; }
+                        if (pos.y < -boundsY) { pos.y = boundsY - 0.01; }
+                        if (pos.y > boundsY) { pos.y = -boundsY + 0.01; }
+
+                        particlesOut[idx].pos = pos;
+                        particlesOut[idx].vel = vel;
+                    }
+                `
+            });
+
+            const renderShader = device.createShaderModule({
+                code: `
+                    struct VertexOutput {
+                        @builtin(position) position: vec4f,
+                        @location(0) velocity: vec2f,
+                        @location(1) uv: vec2f,
+                    }
+
+                    struct Params {
+                        deltaTime: f32,
+                        mouseX: f32,
+                        mouseY: f32,
+                        mouseVelX: f32,
+                        mouseVelY: f32,
+                        mouseDown: f32,
+                        time: f32,
+                        aspectRatio: f32,
+                        numParticles: f32,
+                        isDark: f32,
+                        padding1: f32,
+                        padding2: f32,
+                    }
+
+                    @group(0) @binding(0) var<uniform> params: Params;
+
+                    @vertex
+                    fn vertexMain(
+                        @location(0) pos: vec2f,
+                        @location(1) vel: vec2f,
+                        @builtin(vertex_index) vertexIndex: u32,
+                    ) -> VertexOutput {
+                        var output: VertexOutput;
+                        
+                        let quadPos = array<vec2f, 6>(
+                            vec2f(-1.0, -1.0), vec2f(1.0, -1.0), vec2f(-1.0, 1.0),
+                            vec2f(-1.0, 1.0), vec2f(1.0, -1.0), vec2f(1.0, 1.0)
+                        );
+                        
+                        let localPos = quadPos[vertexIndex];
+                        let speed = length(vel);
+                        let size = 0.006 + speed * 0.3;
+                        
+                        var worldPos = pos + localPos * size;
+                        worldPos.x /= params.aspectRatio;
+                        
+                        output.position = vec4f(worldPos, 0.0, 1.0);
+                        output.velocity = vel;
+                        output.uv = localPos * 0.5 + 0.5;
+                        
+                        return output;
+                    }
+
+                    @fragment
+                    fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
+                        let dist = length(input.uv - 0.5) * 2.0;
+                        if (dist > 1.0) { discard; }
+                        
+                        let speed = length(input.velocity);
+                        let alpha = 1.0 - smoothstep(0.0, 1.0, dist);
+                        let glow = exp(-dist * 2.0);
+                        
+                        // Intensity based on speed - faster = brighter
+                        let intensity = 0.2 + speed * 12.0;
+                        var color: vec3f;
+                        
+                        if (params.isDark > 0.5) {
+                            // Dark mode: white particles with slight warm tint when fast
+                            let warmth = min(speed * 15.0, 1.0);
+                            color = mix(vec3f(intensity), vec3f(intensity, intensity * 0.9, intensity * 0.7), warmth);
+                        } else {
+                            // Light mode: dark particles
+                            color = vec3f(0.0);
+                        }
+                        
+                        let finalAlpha = (alpha * 0.5 + glow * 0.3) * (0.4 + speed * 6.0);
+                        
+                        return vec4f(color, finalAlpha * 0.7);
+                    }
+                `
+            });
+
+            computePipeline = device.createComputePipeline({
+                layout: 'auto',
+                compute: { module: computeShader, entryPoint: 'main' },
+            });
+
+            renderPipeline = device.createRenderPipeline({
+                layout: 'auto',
+                vertex: {
+                    module: renderShader,
+                    entryPoint: 'vertexMain',
+                    buffers: [{
+                        arrayStride: 16,
+                        stepMode: 'instance',
+                        attributes: [
+                            { shaderLocation: 0, offset: 0, format: 'float32x2' },
+                            { shaderLocation: 1, offset: 8, format: 'float32x2' },
+                        ],
+                    }],
+                },
+                fragment: {
+                    module: renderShader,
+                    entryPoint: 'fragmentMain',
+                    targets: [{
+                        format,
+                        blend: {
+                            color: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' },
+                            alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+                        },
+                    }],
+                },
+                primitive: { topology: 'triangle-list' },
+            });
+
+            computeBindGroups = [
+                device.createBindGroup({
+                    layout: computePipeline.getBindGroupLayout(0),
+                    entries: [
+                        { binding: 0, resource: { buffer: uniformBuffer } },
+                        { binding: 1, resource: { buffer: particleBuffers[0] } },
+                        { binding: 2, resource: { buffer: particleBuffers[1] } },
+                    ],
+                }),
+                device.createBindGroup({
+                    layout: computePipeline.getBindGroupLayout(0),
+                    entries: [
+                        { binding: 0, resource: { buffer: uniformBuffer } },
+                        { binding: 1, resource: { buffer: particleBuffers[1] } },
+                        { binding: 2, resource: { buffer: particleBuffers[0] } },
+                    ],
+                }),
+            ];
+
+            renderBindGroup = device.createBindGroup({
+                layout: renderPipeline.getBindGroupLayout(0),
+                entries: [{ binding: 0, resource: { buffer: uniformBuffer } }],
+            });
+        }
+
+        function render(time) {
+            const t = time * 0.001;
+            const aspectRatio = canvas.width / canvas.height;
+            const isDark = window.fluidSim.isDark ? 1.0 : 0.0;
+
+            // Calculate mouse velocity magnitude for audio
+            const mouseVelMag = Math.sqrt(
+                Math.pow(mouseX - prevMouseX, 2) + 
+                Math.pow(mouseY - prevMouseY, 2)
+            );
+            
+            // Update audio-related metrics
+            window.fluidSim.mouseInfluence = mouseVelMag * 10 + (mouseDown ? 0.5 : 0);
+            window.fluidSim.particleActivity = 0.3 + mouseVelMag * 5 + Math.sin(t * 0.5) * 0.1;
+            window.fluidSim.centerMass = 0.5 + Math.sin(t * 0.3) * 0.2;
+
+            const uniforms = new Float32Array([
+                1/60, mouseX, mouseY,
+                mouseX - prevMouseX, mouseY - prevMouseY,
+                mouseDown ? 1.0 : 0.0,
+                t, aspectRatio, NUM_PARTICLES,
+                isDark, 0, 0
+            ]);
+            device.queue.writeBuffer(uniformBuffer, 0, uniforms);
+
+            const commandEncoder = device.createCommandEncoder();
+
+            const computePass = commandEncoder.beginComputePass();
+            computePass.setPipeline(computePipeline);
+            computePass.setBindGroup(0, computeBindGroups[frameCount % 2]);
+            computePass.dispatchWorkgroups(Math.ceil(NUM_PARTICLES / 256));
+            computePass.end();
+
+            // Clear color based on theme
+            const bg = window.fluidSim.isDark 
+                ? { r: 0.039, g: 0.039, b: 0.039, a: 1 }  // #0a0a0a
+                : { r: 0.98, g: 0.98, b: 0.98, a: 1 };    // #fafafa
+
+            const renderPass = commandEncoder.beginRenderPass({
+                colorAttachments: [{
+                    view: context.getCurrentTexture().createView(),
+                    clearValue: bg,
+                    loadOp: 'clear',
+                    storeOp: 'store',
+                }],
+            });
+            renderPass.setPipeline(renderPipeline);
+            renderPass.setBindGroup(0, renderBindGroup);
+            renderPass.setVertexBuffer(0, particleBuffers[(frameCount + 1) % 2]);
+            renderPass.draw(6, NUM_PARTICLES, 0, 0);
+            renderPass.end();
+
+            device.queue.submit([commandEncoder.finish()]);
+
+            frameCount++;
+            prevMouseX = mouseX;
+            prevMouseY = mouseY;
+
+            requestAnimationFrame(render);
+        }
+
+        initFluid();
+
+        // ============================================
+        // Spatialized Audio System
+        // ============================================
+        let audioCtx = null;
+        let audioEnabled = false;
+        let masterGain = null;
+        let droneOsc = null;
+        let droneGain = null;
+        let lfoOsc = null;
+        let lfoGain = null;
+        let particleVoices = [];
+        let reverbNode = null;
+        let filterNode = null;
+
+        const audioToggle = document.getElementById('audioToggle');
+        const audioOnIcon = document.getElementById('audioOn');
+        const audioOffIcon = document.getElementById('audioOff');
+
+        // Track particle activity for audio
+        window.fluidSim.particleActivity = 0;
+        window.fluidSim.mouseInfluence = 0;
+        window.fluidSim.centerMass = 0;
+
+        async function initAudio() {
+            if (audioCtx) return;
+
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Master gain
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0;
+            masterGain.connect(audioCtx.destination);
+
+            // Create convolver for reverb-like space
+            reverbNode = audioCtx.createConvolver();
+            const reverbLength = 2 * audioCtx.sampleRate;
+            const reverbBuffer = audioCtx.createBuffer(2, reverbLength, audioCtx.sampleRate);
+            for (let channel = 0; channel < 2; channel++) {
+                const data = reverbBuffer.getChannelData(channel);
+                for (let i = 0; i < reverbLength; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / reverbLength, 2.5);
+                }
+            }
+            reverbNode.buffer = reverbBuffer;
+
+            // Reverb mix
+            const reverbGain = audioCtx.createGain();
+            reverbGain.gain.value = 0.3;
+            reverbNode.connect(reverbGain);
+            reverbGain.connect(masterGain);
+
+            // Dry signal
+            const dryGain = audioCtx.createGain();
+            dryGain.gain.value = 0.7;
+            dryGain.connect(masterGain);
+
+            // Low-pass filter for warmth
+            filterNode = audioCtx.createBiquadFilter();
+            filterNode.type = 'lowpass';
+            filterNode.frequency.value = 800;
+            filterNode.Q.value = 0.5;
+            filterNode.connect(dryGain);
+            filterNode.connect(reverbNode);
+
+            // === Deep drone (the black hole) ===
+            droneOsc = audioCtx.createOscillator();
+            droneOsc.type = 'sine';
+            droneOsc.frequency.value = 55; // Low A
+            
+            const droneOsc2 = audioCtx.createOscillator();
+            droneOsc2.type = 'sine';
+            droneOsc2.frequency.value = 55.2; // Slight detune for movement
+            
+            const droneOsc3 = audioCtx.createOscillator();
+            droneOsc3.type = 'sine';
+            droneOsc3.frequency.value = 110; // Octave
+            
+            droneGain = audioCtx.createGain();
+            droneGain.gain.value = 0.12;
+            
+            const droneGain2 = audioCtx.createGain();
+            droneGain2.gain.value = 0.1;
+            
+            const droneGain3 = audioCtx.createGain();
+            droneGain3.gain.value = 0.04;
+
+            droneOsc.connect(droneGain);
+            droneOsc2.connect(droneGain2);
+            droneOsc3.connect(droneGain3);
+            droneGain.connect(filterNode);
+            droneGain2.connect(filterNode);
+            droneGain3.connect(filterNode);
+
+            // LFO for drone modulation
+            lfoOsc = audioCtx.createOscillator();
+            lfoOsc.type = 'sine';
+            lfoOsc.frequency.value = 0.1;
+            lfoGain = audioCtx.createGain();
+            lfoGain.gain.value = 5;
+            lfoOsc.connect(lfoGain);
+            lfoGain.connect(droneOsc.frequency);
+            lfoGain.connect(droneOsc2.frequency);
+
+            droneOsc.start();
+            droneOsc2.start();
+            droneOsc3.start();
+            lfoOsc.start();
+
+            // === Particle voices (grain-like tones) ===
+            const baseFreqs = [220, 330, 440, 550, 660, 880]; // Harmonic series from A
+            
+            for (let i = 0; i < 6; i++) {
+                const osc = audioCtx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = baseFreqs[i];
+                
+                const gain = audioCtx.createGain();
+                gain.gain.value = 0;
+                
+                const panner = audioCtx.createStereoPanner();
+                panner.pan.value = (i / 5) * 2 - 1; // Spread across stereo field
+                
+                osc.connect(gain);
+                gain.connect(panner);
+                panner.connect(filterNode);
+                
+                osc.start();
+                
+                particleVoices.push({ osc, gain, panner, baseFreq: baseFreqs[i] });
+            }
+
+            // === Mouse interaction sound ===
+            const interactOsc = audioCtx.createOscillator();
+            interactOsc.type = 'triangle';
+            interactOsc.frequency.value = 180;
+            
+            const interactGain = audioCtx.createGain();
+            interactGain.gain.value = 0;
+            
+            const interactFilter = audioCtx.createBiquadFilter();
+            interactFilter.type = 'bandpass';
+            interactFilter.frequency.value = 400;
+            interactFilter.Q.value = 2;
+            
+            interactOsc.connect(interactFilter);
+            interactFilter.connect(interactGain);
+            interactGain.connect(filterNode);
+            interactOsc.start();
+            
+            window.fluidSim.interactGain = interactGain;
+            window.fluidSim.interactOsc = interactOsc;
+            window.fluidSim.interactFilter = interactFilter;
+        }
+
+        function updateAudio() {
+            if (!audioCtx || !audioEnabled) return;
+
+            const activity = window.fluidSim.particleActivity || 0;
+            const mouseInf = window.fluidSim.mouseInfluence || 0;
+            const centerMass = window.fluidSim.centerMass || 0;
+
+            // Modulate drone based on center mass density
+            if (droneGain) {
+                const targetDroneVol = 0.08 + centerMass * 0.1;
+                droneGain.gain.value += (targetDroneVol - droneGain.gain.value) * 0.05;
+            }
+
+            // Modulate filter based on activity
+            if (filterNode) {
+                const targetFreq = 600 + activity * 1500 + mouseInf * 800;
+                filterNode.frequency.value += (targetFreq - filterNode.frequency.value) * 0.1;
+            }
+
+            // Update particle voices based on activity zones
+            particleVoices.forEach((voice, i) => {
+                const zone = (i / 6); // 0 to ~1
+                const zoneActivity = activity * (1 - Math.abs(zone - 0.5) * 2);
+                const targetVol = Math.min(zoneActivity * 0.03, 0.025);
+                voice.gain.gain.value += (targetVol - voice.gain.gain.value) * 0.08;
+                
+                // Slight pitch drift
+                const drift = Math.sin(Date.now() * 0.001 * (i + 1) * 0.3) * 3;
+                voice.osc.frequency.value = voice.baseFreq + drift;
+                
+                // Pan follows activity
+                const panDrift = Math.sin(Date.now() * 0.0005 * (i + 1)) * 0.5;
+                voice.panner.pan.value = Math.max(-1, Math.min(1, ((i / 5) * 2 - 1) + panDrift));
+            });
+
+            // Mouse interaction sound
+            if (window.fluidSim.interactGain) {
+                const targetInteract = mouseInf * 0.06;
+                window.fluidSim.interactGain.gain.value += (targetInteract - window.fluidSim.interactGain.gain.value) * 0.15;
+                
+                // Pitch follows mouse Y
+                const targetPitch = 150 + (mouseY + 1) * 100;
+                window.fluidSim.interactOsc.frequency.value += (targetPitch - window.fluidSim.interactOsc.frequency.value) * 0.1;
+            }
+
+            requestAnimationFrame(updateAudio);
+        }
+
+        function enableAudio() {
+            if (!audioCtx) {
+                initAudio();
+            }
+            
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            audioEnabled = true;
+            masterGain.gain.setTargetAtTime(0.5, audioCtx.currentTime, 0.5);
+            
+            audioToggle.classList.add('active');
+            audioOnIcon.style.display = 'block';
+            audioOffIcon.style.display = 'none';
+            
+            updateAudio();
+        }
+
+        function disableAudio() {
+            if (!audioCtx) return;
+            
+            audioEnabled = false;
+            masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.3);
+            
+            audioToggle.classList.remove('active');
+            audioOnIcon.style.display = 'none';
+            audioOffIcon.style.display = 'block';
+        }
+
+        audioToggle.addEventListener('click', () => {
+            if (audioEnabled) {
+                disableAudio();
+            } else {
+                enableAudio();
+            }
         });
     </script>
 </body>
