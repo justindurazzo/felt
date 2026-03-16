@@ -16,14 +16,14 @@
         :root {
             --bg: #0a0a0a;
             --fg: #fafafa;
-            --muted: #888;
+            --muted: #bbb;
             --border: #fafafa;
         }
 
         [data-theme="light"] {
             --bg: #fafafa;
             --fg: #0a0a0a;
-            --muted: #666;
+            --muted: #555;
             --border: #0a0a0a;
         }
 
@@ -60,47 +60,49 @@
             display: none;
         }
 
-        /* Audio toggle button */
+        /* Audio toggle button — inline in header */
         #audioToggle {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            z-index: 100;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            border: 1px solid var(--border);
-            background: var(--bg);
+            background: none;
+            border: none;
             color: var(--fg);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
-            opacity: 0.6;
+            transition: opacity 0.3s ease;
+            opacity: 0.35;
+            padding: 0;
         }
 
         #audioToggle:hover {
-            opacity: 1;
-            transform: scale(1.05);
+            opacity: 0.8;
         }
 
         #audioToggle.active {
             opacity: 1;
-            background: var(--fg);
-            color: var(--bg);
         }
 
         .container {
             position: relative;
-            z-index: 1;
-            min-height: 100vh;
+            z-index: 2;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             padding: 2rem;
             max-width: 100vw;
             overflow-x: hidden;
+            pointer-events: none;
+        }
+
+        .container a,
+        .container button,
+        .container input,
+        .container label,
+        .container .switch-track,
+        .container .sequence span,
+        #audioToggle {
+            pointer-events: auto;
         }
 
         header {
@@ -193,7 +195,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: flex-start;
-            padding: 4rem 0;
+            padding: 1rem 0;
         }
 
         .hero {
@@ -202,11 +204,11 @@
         }
 
         h1 {
-            font-size: clamp(2.5rem, 13vw, 16rem);
+            font-size: clamp(2.5rem, 10vw, 10rem);
             font-weight: 900;
             line-height: 0.9;
             letter-spacing: -0.03em;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
 
         .subtitle {
@@ -218,10 +220,9 @@
         }
 
         .thesis {
-            margin-top: 4rem;
-            padding-top: 2rem;
-            border-top: 1px solid var(--border);
-            max-width: 600px;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            max-width: 800px;
         }
 
         .thesis p {
@@ -238,7 +239,7 @@
         .sequence {
             display: flex;
             gap: 1rem;
-            margin-top: 3rem;
+            margin-top: 1.5rem;
             flex-wrap: wrap;
         }
 
@@ -330,29 +331,61 @@
                 align-items: flex-start;
             }
         }
+
+        /* Intro screen */
+        #intro {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.8s ease;
+        }
+
+        #intro.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #intro span {
+            font-size: 0.75rem;
+            font-weight: 900;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--fg);
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+
+        #intro:hover span {
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="fluid-active">
     <canvas id="fluidCanvas"></canvas>
     <div id="fluidError"></div>
 
-    <!-- Audio toggle UI -->
-    <button id="audioToggle" aria-label="Toggle audio">
-        <svg id="audioOn" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-        </svg>
-        <svg id="audioOff" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
-            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-            <line x1="23" y1="9" x2="17" y2="15"></line>
-            <line x1="17" y1="9" x2="23" y2="15"></line>
-        </svg>
-    </button>
+    <div id="intro"><span>Click to Feel</span></div>
 
     <div class="container">
         <header>
             <div class="logo">FELT</div>
             <div class="controls">
+                <button id="audioToggle" aria-label="Toggle audio">
+                    <svg id="audioOn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                    <svg id="audioOff" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <line x1="23" y1="9" x2="17" y2="15"></line>
+                        <line x1="17" y1="9" x2="23" y2="15"></line>
+                    </svg>
+                </button>
                 <div class="theme-switch">
                     <input type="radio" name="theme" id="dark" value="dark" checked>
                     <label for="dark">DARK</label>
@@ -373,9 +406,7 @@
                 <p class="subtitle">The last human offering.</p>
 
                 <div class="thesis">
-                    <p>When machines think better than us, compute faster than us, create beyond us—<strong>what remains?</strong></p>
-                    <p>Not knowledge. Not productivity. Not even creativity.</p>
-                    <p><strong>Feeling.</strong> The irreducible fact of being a body moving through time.</p>
+                    <p>When machines think better than us, compute faster than us, create beyond us—<strong>what remains?</strong> Not knowledge. Not productivity. Not even creativity. <strong>Feeling.</strong> The irreducible fact of being a body moving through time.</p>
                 </div>
 
                 <div class="sequence">
@@ -392,7 +423,7 @@
 
         <footer>
             <span>NOTHING LEFT TO DO</span>
-            <a href="#" class="cta">EVERYTHING LEFT TO FEEL →</a>
+            <span class="cta">EVERYTHING LEFT TO FEEL</span>
         </footer>
     </div>
 
@@ -504,17 +535,17 @@
 
         async function createResources() {
             const initialData = new Float32Array(NUM_PARTICLES * 4);
+            const aspectRatio = window.innerWidth / window.innerHeight;
             for (let i = 0; i < NUM_PARTICLES; i++) {
                 const idx = i * 4;
-                // Spawn in a ring/disc around center
+                // Spawn across the full viewport
+                initialData[idx] = (Math.random() * 2 - 1) * 1.4 * aspectRatio;
+                initialData[idx + 1] = (Math.random() * 2 - 1) * 1.4;
+                // Gentle initial drift
                 const angle = Math.random() * Math.PI * 2;
-                const radius = 0.2 + Math.random() * 0.8; // ring from 0.2 to 1.0
-                initialData[idx] = Math.cos(angle) * radius;
-                initialData[idx + 1] = Math.sin(angle) * radius * 0.6; // squash vertically
-                // Initial orbital velocity (tangent to center) - 35% slower
-                const speed = 0.00195 + Math.random() * 0.0013;
-                initialData[idx + 2] = -Math.sin(angle) * speed;
-                initialData[idx + 3] = Math.cos(angle) * speed * 0.6;
+                const speed = 0.00035 + Math.random() * 0.00056;
+                initialData[idx + 2] = Math.cos(angle) * speed;
+                initialData[idx + 3] = Math.sin(angle) * speed;
             }
 
             particleBuffers = [
@@ -627,57 +658,56 @@
                         var pos = p.pos;
                         var vel = p.vel;
 
-                        // === BLACK HOLE CENTER GRAVITY ===
+                        // === GENTLE CENTER DRIFT ===
                         let center = vec2f(0.0, 0.0);
                         let toCenter = center - pos;
                         let distToCenter = length(toCenter);
-                        
-                        // Gravitational pull (stronger when closer, with minimum distance)
-                        let minDist = 0.05;
-                        let effectiveDist = max(distToCenter, minDist);
-                        let gravityStrength = 0.00026 / (effectiveDist * effectiveDist);
-                        let gravityForce = normalize(toCenter) * min(gravityStrength, 0.0013);
+
+                        // Very soft pull — just enough to keep things from emptying out
+                        let effectiveDist = max(distToCenter, 0.2);
+                        let gravityStrength = 0.000028 / effectiveDist;
+                        let gravityForce = normalize(toCenter) * min(gravityStrength, 0.000105);
                         vel += gravityForce;
-                        
-                        // Orbital velocity (tangent to center) - creates swirl
+
+                        // Gentle orbital drift
                         let tangent = vec2f(-toCenter.y, toCenter.x);
-                        let orbitalStrength = 0.0001 / max(effectiveDist, 0.1);
+                        let orbitalStrength = 0.0000175 / max(effectiveDist, 0.3);
                         vel += normalize(tangent) * orbitalStrength;
 
-                        // Curl noise for turbulence
-                        let noiseScale = 2.0;
-                        let noisePos = vec3f(pos * noiseScale, params.time * 0.13);
-                        let curl = curlNoise(noisePos) * 0.00026;
+                        // Slow, wide curl noise — ambient drift
+                        let noiseScale = 0.8;
+                        let noisePos = vec3f(pos * noiseScale, params.time * 0.042);
+                        let curl = curlNoise(noisePos) * 0.000084;
                         vel += curl;
 
-                        // Mouse interaction - disrupts the flow
+                        // Mouse interaction — soft and responsive
                         let mousePos = vec2f(params.mouseX, params.mouseY);
                         let mouseVel = vec2f(params.mouseVelX, params.mouseVelY);
                         let toMouse = mousePos - pos;
                         let distToMouse = length(toMouse);
-                        
-                        if (distToMouse < 0.35) {
-                            let influence = 1.0 - distToMouse / 0.35;
+
+                        if (distToMouse < 0.45) {
+                            let influence = 1.0 - distToMouse / 0.45;
                             let influenceSmooth = influence * influence * (3.0 - 2.0 * influence);
-                            
+
                             if (params.mouseDown > 0.5) {
-                                // Click pulls particles in
-                                vel += normalize(toMouse) * influenceSmooth * 0.013;
+                                // Click gently gathers particles
+                                vel += normalize(toMouse) * influenceSmooth * 0.0035;
                             } else {
-                                // Hover pushes them away, disrupting orbit
-                                vel -= normalize(toMouse) * influenceSmooth * 0.0052;
-                                vel += mouseVel * influenceSmooth * 0.325;
+                                // Hover softly parts them
+                                vel -= normalize(toMouse) * influenceSmooth * 0.0014;
+                                vel += mouseVel * influenceSmooth * 0.105;
                             }
                         }
 
-                        // Damping
-                        vel *= 0.988;
+                        // Heavier damping — everything moves slowly
+                        vel *= 0.982;
 
                         pos += vel;
 
-                        // Soft boundaries - particles wrap or bounce gently
-                        let bounds = 1.2;
-                        let boundsY = bounds / params.aspectRatio;
+                        // Wide boundaries — full viewport coverage
+                        let bounds = params.aspectRatio * 1.1;
+                        let boundsY = 1.1;
                         
                         if (pos.x < -bounds) { pos.x = bounds - 0.01; }
                         if (pos.x > bounds) { pos.x = -bounds + 0.01; }
@@ -730,7 +760,7 @@
                         
                         let localPos = quadPos[vertexIndex];
                         let speed = length(vel);
-                        let size = 0.006 + speed * 0.3;
+                        let size = 0.005 + speed * 0.15;
                         
                         var worldPos = pos + localPos * size;
                         worldPos.x /= params.aspectRatio;
@@ -746,27 +776,31 @@
                     fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
                         let dist = length(input.uv - 0.5) * 2.0;
                         if (dist > 1.0) { discard; }
-                        
+
                         let speed = length(input.velocity);
                         let alpha = 1.0 - smoothstep(0.0, 1.0, dist);
-                        let glow = exp(-dist * 2.0);
-                        
-                        // Intensity based on speed - faster = brighter
-                        let intensity = 0.2 + speed * 12.0;
+                        let glow = exp(-dist * 1.5);
+
                         var color: vec3f;
-                        
+                        var finalAlpha: f32;
+
+                        let baseAlpha = alpha * 0.6 + glow * 0.4;
+                        let speedBoost = 0.6 + speed * 4.0;
+
                         if (params.isDark > 0.5) {
-                            // Dark mode: white particles with slight warm tint when fast
-                            let warmth = min(speed * 15.0, 1.0);
-                            color = mix(vec3f(intensity), vec3f(intensity, intensity * 0.9, intensity * 0.7), warmth);
+                            let intensity = 0.4 + speed * 6.0;
+                            let warmth = min(speed * 10.0, 0.6);
+                            color = mix(vec3f(intensity), vec3f(intensity, intensity * 0.92, intensity * 0.78), warmth);
+                            finalAlpha = baseAlpha * speedBoost * 0.45;
+                            color = color * finalAlpha;
                         } else {
-                            // Light mode: dark particles
-                            color = vec3f(0.0);
+                            finalAlpha = baseAlpha * speedBoost * 0.55;
+                            finalAlpha = min(finalAlpha, 0.6);
+                            let ink = 0.1 + speed * 1.5;
+                            color = vec3f(ink * 0.12, ink * 0.11, ink * 0.16) * finalAlpha;
                         }
-                        
-                        let finalAlpha = (alpha * 0.5 + glow * 0.3) * (0.4 + speed * 6.0);
-                        
-                        return vec4f(color, finalAlpha * 0.7);
+
+                        return vec4f(color, finalAlpha);
                     }
                 `
             });
@@ -796,7 +830,7 @@
                     targets: [{
                         format,
                         blend: {
-                            color: { srcFactor: 'src-alpha', dstFactor: 'one', operation: 'add' },
+                            color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
                             alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
                         },
                     }],
@@ -893,157 +927,173 @@
         initFluid();
 
         // ============================================
-        // Spatialized Audio System
+        // Generative Ambient Audio — Eno-esque
         // ============================================
         let audioCtx = null;
         let audioEnabled = false;
         let masterGain = null;
-        let droneOsc = null;
-        let droneGain = null;
-        let lfoOsc = null;
-        let lfoGain = null;
-        let particleVoices = [];
-        let reverbNode = null;
-        let filterNode = null;
 
         const audioToggle = document.getElementById('audioToggle');
         const audioOnIcon = document.getElementById('audioOn');
         const audioOffIcon = document.getElementById('audioOff');
 
-        // Track particle activity for audio
         window.fluidSim.particleActivity = 0;
         window.fluidSim.mouseInfluence = 0;
         window.fluidSim.centerMass = 0;
 
+        // Eno-style: pentatonic tones on independent slow cycles
+        // Music For Airports approach — overlapping loops of different lengths
+        const TONE_CONFIGS = [
+            { note: 130.81, dur: 4.0, every: 8.2,  pan: -0.6  }, // C3
+            { note: 164.81, dur: 5.5, every: 11.3,  pan: 0.3   }, // E3
+            { note: 196.00, dur: 3.8, every: 7.1,  pan: -0.2  }, // G3
+            { note: 261.63, dur: 6.0, every: 13.7, pan: 0.5   }, // C4
+            { note: 329.63, dur: 4.5, every: 9.9,  pan: -0.4  }, // E4
+            { note: 392.00, dur: 5.0, every: 15.1, pan: 0.7   }, // G4
+            { note: 523.25, dur: 7.0, every: 19.3, pan: -0.1  }, // C5
+        ];
+
+        let reverbNode = null;
+        let warmFilter = null;
+        let toneTimers = [];
+        let padOscs = [];
+        let padGains = [];
+
         async function initAudio() {
             if (audioCtx) return;
-
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            
-            // Master gain
+
             masterGain = audioCtx.createGain();
             masterGain.gain.value = 0;
             masterGain.connect(audioCtx.destination);
 
-            // Create convolver for reverb-like space
+            // Long reverb tail — spacious
             reverbNode = audioCtx.createConvolver();
-            const reverbLength = 2 * audioCtx.sampleRate;
-            const reverbBuffer = audioCtx.createBuffer(2, reverbLength, audioCtx.sampleRate);
-            for (let channel = 0; channel < 2; channel++) {
-                const data = reverbBuffer.getChannelData(channel);
-                for (let i = 0; i < reverbLength; i++) {
-                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / reverbLength, 2.5);
+            const reverbLen = 4 * audioCtx.sampleRate;
+            const reverbBuf = audioCtx.createBuffer(2, reverbLen, audioCtx.sampleRate);
+            for (let ch = 0; ch < 2; ch++) {
+                const d = reverbBuf.getChannelData(ch);
+                for (let i = 0; i < reverbLen; i++) {
+                    d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / reverbLen, 3.0);
                 }
             }
-            reverbNode.buffer = reverbBuffer;
+            reverbNode.buffer = reverbBuf;
 
-            // Reverb mix
             const reverbGain = audioCtx.createGain();
-            reverbGain.gain.value = 0.3;
+            reverbGain.gain.value = 0.55;
             reverbNode.connect(reverbGain);
             reverbGain.connect(masterGain);
 
-            // Dry signal
             const dryGain = audioCtx.createGain();
-            dryGain.gain.value = 0.7;
+            dryGain.gain.value = 0.45;
             dryGain.connect(masterGain);
 
-            // Low-pass filter for warmth
-            filterNode = audioCtx.createBiquadFilter();
-            filterNode.type = 'lowpass';
-            filterNode.frequency.value = 800;
-            filterNode.Q.value = 0.5;
-            filterNode.connect(dryGain);
-            filterNode.connect(reverbNode);
+            // Warm filter — keeps everything soft
+            warmFilter = audioCtx.createBiquadFilter();
+            warmFilter.type = 'lowpass';
+            warmFilter.frequency.value = 2000;
+            warmFilter.Q.value = 0.3;
+            warmFilter.connect(dryGain);
+            warmFilter.connect(reverbNode);
 
-            // === Deep drone (the black hole) ===
-            droneOsc = audioCtx.createOscillator();
-            droneOsc.type = 'sine';
-            droneOsc.frequency.value = 55; // Low A
-            
-            const droneOsc2 = audioCtx.createOscillator();
-            droneOsc2.type = 'sine';
-            droneOsc2.frequency.value = 55.2; // Slight detune for movement
-            
-            const droneOsc3 = audioCtx.createOscillator();
-            droneOsc3.type = 'sine';
-            droneOsc3.frequency.value = 110; // Octave
-            
-            droneGain = audioCtx.createGain();
-            droneGain.gain.value = 0.12;
-            
-            const droneGain2 = audioCtx.createGain();
-            droneGain2.gain.value = 0.1;
-            
-            const droneGain3 = audioCtx.createGain();
-            droneGain3.gain.value = 0.04;
+            // === Soft pad drone — two detuned sines ===
+            const padNotes = [65.41, 98.00, 130.81]; // C2, G2, C3
+            padNotes.forEach((freq, i) => {
+                const osc1 = audioCtx.createOscillator();
+                osc1.type = 'sine';
+                osc1.frequency.value = freq;
 
-            droneOsc.connect(droneGain);
-            droneOsc2.connect(droneGain2);
-            droneOsc3.connect(droneGain3);
-            droneGain.connect(filterNode);
-            droneGain2.connect(filterNode);
-            droneGain3.connect(filterNode);
+                const osc2 = audioCtx.createOscillator();
+                osc2.type = 'sine';
+                osc2.frequency.value = freq * 1.003; // slight detune — slow beating
 
-            // LFO for drone modulation
-            lfoOsc = audioCtx.createOscillator();
-            lfoOsc.type = 'sine';
-            lfoOsc.frequency.value = 0.1;
-            lfoGain = audioCtx.createGain();
-            lfoGain.gain.value = 5;
-            lfoOsc.connect(lfoGain);
-            lfoGain.connect(droneOsc.frequency);
-            lfoGain.connect(droneOsc2.frequency);
-
-            droneOsc.start();
-            droneOsc2.start();
-            droneOsc3.start();
-            lfoOsc.start();
-
-            // === Particle voices (grain-like tones) ===
-            const baseFreqs = [220, 330, 440, 550, 660, 880]; // Harmonic series from A
-            
-            for (let i = 0; i < 6; i++) {
-                const osc = audioCtx.createOscillator();
-                osc.type = 'sine';
-                osc.frequency.value = baseFreqs[i];
-                
                 const gain = audioCtx.createGain();
-                gain.gain.value = 0;
-                
-                const panner = audioCtx.createStereoPanner();
-                panner.pan.value = (i / 5) * 2 - 1; // Spread across stereo field
-                
-                osc.connect(gain);
-                gain.connect(panner);
-                panner.connect(filterNode);
-                
-                osc.start();
-                
-                particleVoices.push({ osc, gain, panner, baseFreq: baseFreqs[i] });
-            }
+                gain.gain.value = 0.08;
 
-            // === Mouse interaction sound ===
-            const interactOsc = audioCtx.createOscillator();
-            interactOsc.type = 'triangle';
-            interactOsc.frequency.value = 180;
-            
-            const interactGain = audioCtx.createGain();
-            interactGain.gain.value = 0;
-            
-            const interactFilter = audioCtx.createBiquadFilter();
-            interactFilter.type = 'bandpass';
-            interactFilter.frequency.value = 400;
-            interactFilter.Q.value = 2;
-            
-            interactOsc.connect(interactFilter);
-            interactFilter.connect(interactGain);
-            interactGain.connect(filterNode);
-            interactOsc.start();
-            
-            window.fluidSim.interactGain = interactGain;
-            window.fluidSim.interactOsc = interactOsc;
-            window.fluidSim.interactFilter = interactFilter;
+                const panner = audioCtx.createStereoPanner();
+                panner.pan.value = (i - 1) * 0.3;
+
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(panner);
+                panner.connect(warmFilter);
+
+                osc1.start();
+                osc2.start();
+
+                padOscs.push(osc1, osc2);
+                padGains.push(gain);
+            });
+
+        }
+
+        function playTone(cfg, activityMod) {
+            if (!audioCtx || !audioEnabled) return;
+
+            const now = audioCtx.currentTime;
+
+            // Mouse Y shifts pitch gently (higher mouse = slightly higher pitch)
+            const mouseYNorm = (mouseY + 1) * 0.5; // 0 to 1
+            const detune = (Math.random() - 0.5) * 6 + (mouseYNorm - 0.5) * 30;
+            const freq = cfg.note * Math.pow(2, detune / 1200);
+
+            // Two oscillators for richness
+            const osc = audioCtx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+
+            const osc2 = audioCtx.createOscillator();
+            osc2.type = 'sine';
+            osc2.frequency.value = freq * 2.002;
+
+            const gain = audioCtx.createGain();
+            const harmonicGain = audioCtx.createGain();
+
+            // Soft envelope — slow attack, long release
+            const vol = 0.1 + activityMod * 0.04;
+            const attackTime = 0.8 + Math.random() * 0.5;
+
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(vol, now + attackTime);
+            gain.gain.setValueAtTime(vol, now + attackTime + 0.3);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + cfg.dur);
+
+            harmonicGain.gain.value = 0.15;
+
+            // Pan blends between configured position and mouse X
+            const panner = audioCtx.createStereoPanner();
+            const mousePan = mouseX * 0.6; // mouse influence on pan
+            panner.pan.value = cfg.pan * 0.5 + mousePan * 0.5 + (Math.random() - 0.5) * 0.15;
+
+            osc.connect(gain);
+            osc2.connect(harmonicGain);
+            harmonicGain.connect(gain);
+            gain.connect(panner);
+            panner.connect(warmFilter);
+
+            osc.start(now);
+            osc2.start(now);
+            osc.stop(now + cfg.dur + 0.1);
+            osc2.stop(now + cfg.dur + 0.1);
+        }
+
+        function startToneLoop(cfg) {
+            function tick() {
+                if (!audioEnabled) {
+                    const t = setTimeout(tick, 500);
+                    toneTimers.push(t);
+                    return;
+                }
+                const activity = window.fluidSim.particleActivity || 0;
+                playTone(cfg, activity);
+
+                // Vary the interval — Eno-style phase drift
+                const variation = 0.7 + Math.random() * 0.6;
+                const interval = cfg.every * variation * 1000;
+                const t = setTimeout(tick, interval);
+                toneTimers.push(t);
+            }
+            tick();
         }
 
         function updateAudio() {
@@ -1051,85 +1101,78 @@
 
             const activity = window.fluidSim.particleActivity || 0;
             const mouseInf = window.fluidSim.mouseInfluence || 0;
-            const centerMass = window.fluidSim.centerMass || 0;
+            const mouseYNorm = (mouseY + 1) * 0.5; // 0 to 1
 
-            // Modulate drone based on center mass density
-            if (droneGain) {
-                const targetDroneVol = 0.08 + centerMass * 0.1;
-                droneGain.gain.value += (targetDroneVol - droneGain.gain.value) * 0.05;
+            // Filter opens with motion and mouse movement
+            if (warmFilter) {
+                const targetFreq = 800 + activity * 600 + mouseInf * 600 + mouseYNorm * 400;
+                warmFilter.frequency.value += (targetFreq - warmFilter.frequency.value) * 0.04;
             }
 
-            // Modulate filter based on activity
-            if (filterNode) {
-                const targetFreq = 600 + activity * 1500 + mouseInf * 800;
-                filterNode.frequency.value += (targetFreq - filterNode.frequency.value) * 0.1;
-            }
-
-            // Update particle voices based on activity zones
-            particleVoices.forEach((voice, i) => {
-                const zone = (i / 6); // 0 to ~1
-                const zoneActivity = activity * (1 - Math.abs(zone - 0.5) * 2);
-                const targetVol = Math.min(zoneActivity * 0.03, 0.025);
-                voice.gain.gain.value += (targetVol - voice.gain.gain.value) * 0.08;
-                
-                // Slight pitch drift
-                const drift = Math.sin(Date.now() * 0.001 * (i + 1) * 0.3) * 3;
-                voice.osc.frequency.value = voice.baseFreq + drift;
-                
-                // Pan follows activity
-                const panDrift = Math.sin(Date.now() * 0.0005 * (i + 1)) * 0.5;
-                voice.panner.pan.value = Math.max(-1, Math.min(1, ((i / 5) * 2 - 1) + panDrift));
+            // Pad volume breathes with activity, mouse adds presence
+            padGains.forEach((g, i) => {
+                const breath = Math.sin(Date.now() * 0.0003 * (i + 1)) * 0.008;
+                const target = 0.02 + activity * 0.015 + mouseInf * 0.02 + breath;
+                g.gain.value += (target - g.gain.value) * 0.02;
             });
 
-            // Mouse interaction sound
-            if (window.fluidSim.interactGain) {
-                const targetInteract = mouseInf * 0.06;
-                window.fluidSim.interactGain.gain.value += (targetInteract - window.fluidSim.interactGain.gain.value) * 0.15;
-                
-                // Pitch follows mouse Y
-                const targetPitch = 150 + (mouseY + 1) * 100;
-                window.fluidSim.interactOsc.frequency.value += (targetPitch - window.fluidSim.interactOsc.frequency.value) * 0.1;
-            }
+            // Pad pitch drifts subtly with mouse Y
+            padOscs.forEach((osc, i) => {
+                const baseFreq = osc._baseFreq || osc.frequency.value;
+                if (!osc._baseFreq) osc._baseFreq = osc.frequency.value;
+                const drift = (mouseYNorm - 0.5) * 2;
+                const targetFreq = baseFreq * (1 + drift * 0.008);
+                osc.frequency.value += (targetFreq - osc.frequency.value) * 0.02;
+            });
 
             requestAnimationFrame(updateAudio);
         }
 
-        function enableAudio() {
-            if (!audioCtx) {
-                initAudio();
-            }
-            
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+        async function enableAudio() {
+            if (!audioCtx) await initAudio();
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
 
             audioEnabled = true;
-            masterGain.gain.setTargetAtTime(0.5, audioCtx.currentTime, 0.5);
-            
+            masterGain.gain.setTargetAtTime(0.8, audioCtx.currentTime, 0.3);
+
+            // Start generative tone loops (only once)
+            if (toneTimers.length === 0) {
+                TONE_CONFIGS.forEach((cfg) => {
+                    // First tone within 0-3 seconds so you hear something right away
+                    const firstDelay = Math.random() * 3000;
+                    const timerId = setTimeout(() => startToneLoop(cfg), firstDelay);
+                    toneTimers.push(timerId);
+                });
+            }
+
             audioToggle.classList.add('active');
             audioOnIcon.style.display = 'block';
             audioOffIcon.style.display = 'none';
-            
+
             updateAudio();
         }
 
         function disableAudio() {
             if (!audioCtx) return;
-            
             audioEnabled = false;
-            masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.3);
-            
+            masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.8);
+
             audioToggle.classList.remove('active');
             audioOnIcon.style.display = 'none';
             audioOffIcon.style.display = 'block';
         }
 
         audioToggle.addEventListener('click', () => {
-            if (audioEnabled) {
-                disableAudio();
-            } else {
-                enableAudio();
-            }
+            if (audioEnabled) disableAudio();
+            else enableAudio();
+        });
+
+        // Intro screen — click to start audio and reveal page
+        const intro = document.getElementById('intro');
+        intro.addEventListener('click', () => {
+            enableAudio();
+            intro.classList.add('fade-out');
+            setTimeout(() => intro.remove(), 800);
         });
     </script>
 </body>
