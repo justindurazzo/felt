@@ -409,6 +409,39 @@
             opacity: 0.55;
         }
 
+        /* Mobile drag hint — same style, hidden on desktop */
+        #dragHintMobile {
+            position: fixed;
+            top: 4rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.65rem;
+            font-weight: 900;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--muted);
+            opacity: 0;
+            z-index: 5;
+            pointer-events: none;
+            transition: opacity 1.5s ease;
+            display: none;
+        }
+
+        #dragHintMobile.visible {
+            opacity: 0.55;
+        }
+
+        /* Show correct hint per device */
+        .mobile-tooltip { display: none; }
+        .desktop-tooltip { display: inline; }
+
+        @media (hover: none) and (pointer: coarse) {
+            #dragHint { display: none; }
+            #dragHintMobile { display: block; }
+            .mobile-tooltip { display: inline; }
+            .desktop-tooltip { display: none; }
+        }
+
         /* Info button */
         .info-btn {
             position: relative;
@@ -463,6 +496,7 @@
 
     <div id="intro"><span>Click to Feel</span></div>
     <div id="dragHint">Click and Drag</div>
+    <div id="dragHintMobile">Tap and Drag</div>
 
     <div class="container">
         <header>
@@ -470,7 +504,8 @@
             <div class="controls">
                 <button class="info-btn" aria-label="Info">
                     ?
-                    <span class="info-tooltip">Click and drag to make music</span>
+                    <span class="info-tooltip desktop-tooltip">Click and drag to make music</span>
+                    <span class="info-tooltip mobile-tooltip">Tap and drag to make music</span>
                 </button>
                 <button id="audioToggle" aria-label="Toggle audio">
                     <svg id="audioOn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1185,12 +1220,8 @@
         let dragGain = null;
         let dragPanner = null;
 
-        const isTouchDevice = 'ontouchstart' in window;
-
         function startDrag() {
             playClickTone();
-            // On touch devices, just play click tones — no sustained drag tone
-            if (isTouchDevice) return;
             if (!audioCtx || !audioEnabled) return;
 
             const now = audioCtx.currentTime;
@@ -1421,9 +1452,14 @@
             // Show drag hint after intro fades
             setTimeout(() => {
                 const hint = document.getElementById('dragHint');
+                const hintMobile = document.getElementById('dragHintMobile');
                 if (hint) {
                     hint.classList.add('visible');
                     setTimeout(() => hint.classList.remove('visible'), 6000);
+                }
+                if (hintMobile) {
+                    hintMobile.classList.add('visible');
+                    setTimeout(() => hintMobile.classList.remove('visible'), 6000);
                 }
             }, 1500);
         });
