@@ -1132,10 +1132,14 @@
 
             const now = audioCtx.currentTime;
 
-            // Pick note based on mouse Y position
+            // Pick note based on mouse Y position + randomness for touch variety
             const mouseYNorm = (mouseY + 1) * 0.5;
-            const noteIdx = Math.floor(mouseYNorm * CLICK_NOTES.length);
-            const baseFreq = CLICK_NOTES[Math.min(noteIdx, CLICK_NOTES.length - 1)];
+            const posIdx = Math.floor(mouseYNorm * CLICK_NOTES.length);
+            // On touch (small/no movement), add random offset so repeated taps vary
+            const isMobile = 'ontouchstart' in window;
+            const jitter = isMobile ? Math.floor(Math.random() * 3) - 1 : 0;
+            const noteIdx = Math.max(0, Math.min(posIdx + jitter, CLICK_NOTES.length - 1));
+            const baseFreq = CLICK_NOTES[noteIdx];
 
             // Slight humanization
             const freq = baseFreq * Math.pow(2, (Math.random() - 0.5) * 8 / 1200);
