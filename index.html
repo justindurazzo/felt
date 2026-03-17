@@ -295,7 +295,7 @@
             color: var(--muted);
             letter-spacing: 0.1em;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 0.4rem;
         }
 
         .cta {
@@ -1241,11 +1241,11 @@
             dragOsc2.frequency.value = startFreq * 1.5;
 
             const dragGain2 = audioCtx.createGain();
-            dragGain2.gain.value = 0.014;
+            dragGain2.gain.value = 0.015;
 
             dragGain = audioCtx.createGain();
             dragGain.gain.setValueAtTime(0, now);
-            dragGain.gain.linearRampToValueAtTime(0.04, now + 0.4);
+            dragGain.gain.linearRampToValueAtTime(0.043, now + 0.4);
 
             dragPanner = audioCtx.createStereoPanner();
             dragPanner.pan.value = mouseX * 0.7;
