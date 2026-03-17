@@ -1240,11 +1240,11 @@
             dragOsc2.frequency.value = startFreq * 1.5;
 
             const dragGain2 = audioCtx.createGain();
-            dragGain2.gain.value = 0.012;
+            dragGain2.gain.value = 0.014;
 
             dragGain = audioCtx.createGain();
             dragGain.gain.setValueAtTime(0, now);
-            dragGain.gain.linearRampToValueAtTime(0.035, now + 0.4);
+            dragGain.gain.linearRampToValueAtTime(0.04, now + 0.4);
 
             dragPanner = audioCtx.createStereoPanner();
             dragPanner.pan.value = mouseX * 0.7;
