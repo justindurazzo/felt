@@ -387,6 +387,27 @@
             0%, 100% { opacity: 0.25; }
             50% { opacity: 0.6; }
         }
+
+        /* Drag hint */
+        #dragHint {
+            position: fixed;
+            bottom: 4rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.65rem;
+            font-weight: 900;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--muted);
+            opacity: 0;
+            z-index: 5;
+            pointer-events: none;
+            transition: opacity 1.5s ease;
+        }
+
+        #dragHint.visible {
+            opacity: 0.4;
+        }
     </style>
 </head>
 <body class="fluid-active">
@@ -394,6 +415,7 @@
     <div id="fluidError"></div>
 
     <div id="intro"><span>Click to Feel</span></div>
+    <div id="dragHint">Click and Drag</div>
 
     <div class="container">
         <header>
@@ -1336,6 +1358,14 @@
             enableAudio();
             intro.classList.add('fade-out');
             setTimeout(() => intro.remove(), 800);
+            // Show drag hint after intro fades
+            setTimeout(() => {
+                const hint = document.getElementById('dragHint');
+                if (hint) {
+                    hint.classList.add('visible');
+                    setTimeout(() => hint.classList.remove('visible'), 6000);
+                }
+            }, 3000);
         });
     </script>
 </body>
