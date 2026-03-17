@@ -1132,13 +1132,14 @@
 
             const now = audioCtx.currentTime;
 
-            // Pick note based on mouse Y position + randomness for touch variety
-            const mouseYNorm = (mouseY + 1) * 0.5;
-            const posIdx = Math.floor(mouseYNorm * CLICK_NOTES.length);
-            // On touch (small/no movement), add random offset so repeated taps vary
-            const isMobile = 'ontouchstart' in window;
-            const jitter = isMobile ? Math.floor(Math.random() * 3) - 1 : 0;
-            const noteIdx = Math.max(0, Math.min(posIdx + jitter, CLICK_NOTES.length - 1));
+            // Pick note — position-based on desktop, random on touch
+            let noteIdx;
+            if ('ontouchstart' in window) {
+                noteIdx = Math.floor(Math.random() * CLICK_NOTES.length);
+            } else {
+                const mouseYNorm = (mouseY + 1) * 0.5;
+                noteIdx = Math.min(Math.floor(mouseYNorm * CLICK_NOTES.length), CLICK_NOTES.length - 1);
+            }
             const baseFreq = CLICK_NOTES[noteIdx];
 
             // Slight humanization
@@ -1184,8 +1185,12 @@
         let dragGain = null;
         let dragPanner = null;
 
+        const isTouchDevice = 'ontouchstart' in window;
+
         function startDrag() {
             playClickTone();
+            // On touch devices, just play click tones — no sustained drag tone
+            if (isTouchDevice) return;
             if (!audioCtx || !audioEnabled) return;
 
             const now = audioCtx.currentTime;
