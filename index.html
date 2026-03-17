@@ -408,6 +408,53 @@
         #dragHint.visible {
             opacity: 0.55;
         }
+
+        /* Info button */
+        .info-btn {
+            position: relative;
+            background: none;
+            border: 1px solid var(--fg);
+            color: var(--fg);
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            font-size: 0.55rem;
+            font-weight: 900;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            opacity: 0.35;
+            transition: opacity 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .info-btn:hover {
+            opacity: 0.8;
+        }
+
+        .info-tooltip {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            white-space: nowrap;
+            font-size: 0.6rem;
+            font-weight: 900;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--fg);
+            background: var(--bg);
+            padding: 0.4rem 0.7rem;
+            border: 1px solid var(--border);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .info-btn:hover .info-tooltip {
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="fluid-active">
@@ -421,6 +468,10 @@
         <header>
             <div class="logo">FELT</div>
             <div class="controls">
+                <button class="info-btn" aria-label="Info">
+                    ?
+                    <span class="info-tooltip">Click and drag to make music</span>
+                </button>
                 <button id="audioToggle" aria-label="Toggle audio">
                     <svg id="audioOn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
