@@ -391,7 +391,7 @@
         /* Drag hint */
         #dragHint {
             position: fixed;
-            bottom: 4rem;
+            top: 4rem;
             left: 50%;
             transform: translateX(-50%);
             font-size: 0.65rem;
@@ -406,7 +406,7 @@
         }
 
         #dragHint.visible {
-            opacity: 0.4;
+            opacity: 0.55;
         }
     </style>
 </head>
@@ -1365,7 +1365,7 @@
                     hint.classList.add('visible');
                     setTimeout(() => hint.classList.remove('visible'), 6000);
                 }
-            }, 3000);
+            }, 1500);
         });
     </script>
 </body>
