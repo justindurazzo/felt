@@ -318,7 +318,7 @@
         @media (max-width: 768px) {
             .container {
                 padding: 1.5rem;
-                padding-bottom: env(safe-area-inset-bottom, 1.5rem);
+                padding-bottom: calc(env(safe-area-inset-bottom, 1.5rem) + 0.5rem);
             }
 
             .controls {
@@ -1241,11 +1241,11 @@
             dragOsc2.frequency.value = startFreq * 1.5;
 
             const dragGain2 = audioCtx.createGain();
-            dragGain2.gain.value = 0.015;
+            dragGain2.gain.value = 0.016;
 
             dragGain = audioCtx.createGain();
             dragGain.gain.setValueAtTime(0, now);
-            dragGain.gain.linearRampToValueAtTime(0.043, now + 0.4);
+            dragGain.gain.linearRampToValueAtTime(0.046, now + 0.4);
 
             dragPanner = audioCtx.createStereoPanner();
             dragPanner.pan.value = mouseX * 0.7;
