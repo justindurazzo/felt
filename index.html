@@ -603,6 +603,36 @@
 
         window.fluidSim = { isDark: true };
 
+        // Mouse events — outside initFluid so they work even without WebGPU
+        document.addEventListener('mousemove', (e) => {
+            prevMouseX = mouseX;
+            prevMouseY = mouseY;
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -((e.clientY / window.innerHeight) * 2 - 1);
+        });
+        document.addEventListener('mousedown', () => mouseDown = true);
+        document.addEventListener('mouseup', () => mouseDown = false);
+
+        // Touch events
+        document.addEventListener('touchstart', (e) => {
+            mouseDown = true;
+            const touch = e.touches[0];
+            prevMouseX = mouseX;
+            prevMouseY = mouseY;
+            mouseX = (touch.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -((touch.clientY / window.innerHeight) * 2 - 1);
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            prevMouseX = mouseX;
+            prevMouseY = mouseY;
+            mouseX = (touch.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -((touch.clientY / window.innerHeight) * 2 - 1);
+        }, { passive: true });
+
+        document.addEventListener('touchend', () => mouseDown = false);
+
         async function initFluid() {
             if (!navigator.gpu) {
                 console.log('WebGPU not supported, falling back gracefully');
@@ -615,7 +645,7 @@
             device = await adapter.requestDevice();
             context = canvas.getContext('webgpu');
             format = navigator.gpu.getPreferredCanvasFormat();
-            
+
             context.configure({
                 device,
                 format,
@@ -624,36 +654,6 @@
 
             resize();
             window.addEventListener('resize', resize);
-            
-            // Mouse events
-            document.addEventListener('mousemove', (e) => {
-                prevMouseX = mouseX;
-                prevMouseY = mouseY;
-                mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-                mouseY = -((e.clientY / window.innerHeight) * 2 - 1);
-            });
-            document.addEventListener('mousedown', () => mouseDown = true);
-            document.addEventListener('mouseup', () => mouseDown = false);
-
-            // Touch events
-            document.addEventListener('touchstart', (e) => {
-                mouseDown = true;
-                const touch = e.touches[0];
-                prevMouseX = mouseX;
-                prevMouseY = mouseY;
-                mouseX = (touch.clientX / window.innerWidth) * 2 - 1;
-                mouseY = -((touch.clientY / window.innerHeight) * 2 - 1);
-            }, { passive: true });
-
-            document.addEventListener('touchmove', (e) => {
-                const touch = e.touches[0];
-                prevMouseX = mouseX;
-                prevMouseY = mouseY;
-                mouseX = (touch.clientX / window.innerWidth) * 2 - 1;
-                mouseY = -((touch.clientY / window.innerHeight) * 2 - 1);
-            }, { passive: true });
-
-            document.addEventListener('touchend', () => mouseDown = false);
 
             await createResources();
             requestAnimationFrame(render);
