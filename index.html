@@ -1167,14 +1167,13 @@
 
             const now = audioCtx.currentTime;
 
-            // Pick note — position-based on desktop, random on touch
-            let noteIdx;
-            if ('ontouchstart' in window) {
-                noteIdx = Math.floor(Math.random() * CLICK_NOTES.length);
-            } else {
-                const mouseYNorm = (mouseY + 1) * 0.5;
-                noteIdx = Math.min(Math.floor(mouseYNorm * CLICK_NOTES.length), CLICK_NOTES.length - 1);
-            }
+            // Pick note based on Y position — works for both mouse and touch
+            // since touch events now update mouseY before this runs
+            const mouseYNorm = (mouseY + 1) * 0.5;
+            const posIdx = Math.min(Math.floor(mouseYNorm * CLICK_NOTES.length), CLICK_NOTES.length - 1);
+            // Add slight random jitter so nearby taps still vary
+            const jitter = Math.floor(Math.random() * 3) - 1;
+            const noteIdx = Math.max(0, Math.min(posIdx + jitter, CLICK_NOTES.length - 1));
             const baseFreq = CLICK_NOTES[noteIdx];
 
             // Slight humanization
@@ -1226,13 +1225,19 @@
 
             const now = audioCtx.currentTime;
 
+            // Start drag tone at current position's note
+            const yNorm = (mouseY + 1) * 0.5;
+            const idx = Math.min(Math.floor(yNorm * CLICK_NOTES.length), CLICK_NOTES.length - 1);
+            const startFreq = CLICK_NOTES[idx];
+            lastDragNote = idx;
+
             dragOsc = audioCtx.createOscillator();
             dragOsc.type = 'sine';
-            dragOsc.frequency.value = 261.63;
+            dragOsc.frequency.value = startFreq;
 
             dragOsc2 = audioCtx.createOscillator();
             dragOsc2.type = 'sine';
-            dragOsc2.frequency.value = 261.63 * 1.5;
+            dragOsc2.frequency.value = startFreq * 1.5;
 
             const dragGain2 = audioCtx.createGain();
             dragGain2.gain.value = 0.012;
