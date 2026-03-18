@@ -927,8 +927,8 @@
                             finalAlpha = baseAlpha * speedBoost * 0.45;
                             color = color * finalAlpha;
                         } else {
-                            finalAlpha = baseAlpha * speedBoost * 0.55;
-                            finalAlpha = min(finalAlpha, 0.6);
+                            finalAlpha = baseAlpha * speedBoost * 0.35;
+                            finalAlpha = min(finalAlpha, 0.35);
                             let ink = 0.1 + speed * 1.5;
                             color = vec3f(ink * 0.12, ink * 0.11, ink * 0.16) * finalAlpha;
                         }
