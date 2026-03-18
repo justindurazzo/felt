@@ -1449,9 +1449,11 @@
             else enableAudio();
         });
 
-        // Intro screen — click to start audio and reveal page
+        // Intro screen — start audio and reveal page
+        // Use touchend on mobile (click fires too late for Safari AudioContext)
         const intro = document.getElementById('intro');
-        intro.addEventListener('click', () => {
+        function dismissIntro() {
+            if (intro.classList.contains('fade-out')) return; // prevent double-fire
             enableAudio();
             intro.classList.add('fade-out');
             setTimeout(() => intro.remove(), 800);
@@ -1468,7 +1470,9 @@
                     setTimeout(() => hintMobile.classList.remove('visible'), 6000);
                 }
             }, 1500);
-        });
+        }
+        intro.addEventListener('click', dismissIntro);
+        intro.addEventListener('touchend', dismissIntro);
     </script>
 </body>
 </html>
